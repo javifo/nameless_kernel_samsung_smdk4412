@@ -34,7 +34,7 @@ extern int migrate_huge_pages(struct list_head *l, new_page_t x,
 			enum migrate_mode mode);
 #else
 extern int migrate_page(struct address_space *,
-			struct page *, struct page *);
+			struct page *, struct page *, bool);
 extern int migrate_pages(struct list_head *l, new_page_t x,
 			unsigned long private, bool offlining,
 			bool sync, int tries);
