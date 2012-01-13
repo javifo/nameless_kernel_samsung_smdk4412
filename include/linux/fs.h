@@ -2492,7 +2492,7 @@ extern int buffer_migrate_page(struct address_space *,
 				enum migrate_mode);
 #else
 extern int buffer_migrate_page(struct address_space *,
-				struct page *, struct page *, bool);
+				struct page *, struct page *, enum migrate_mode);
 #endif
 #else
 #define buffer_migrate_page NULL

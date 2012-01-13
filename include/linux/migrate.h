@@ -34,16 +34,16 @@ extern int migrate_huge_pages(struct list_head *l, new_page_t x,
 			enum migrate_mode mode);
 #else
 extern int migrate_page(struct address_space *,
-			struct page *, struct page *, bool);
+			struct page *, struct page *, enum migrate_mode);
 extern int migrate_pages(struct list_head *l, new_page_t x,
 			unsigned long private, bool offlining,
-			bool sync, int tries);
+			enum migrate_mode, int tries);
 
 extern int migrate_replace_cma_page(struct page *oldpage,
 				       struct page **newpage);
 extern int migrate_huge_pages(struct list_head *l, new_page_t x,
 			unsigned long private, bool offlining,
-			bool sync);
+			enum migrate_mode);
 #endif
 
 extern int fail_migrate_page(struct address_space *,
