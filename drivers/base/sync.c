@@ -15,7 +15,9 @@
  */
 
 #include <linux/debugfs.h>
-#include <linux/export.h>
+//<<<<<<< HEAD
+//#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/kernel.h>
@@ -569,40 +571,12 @@ EXPORT_SYMBOL(sync_fence_cancel_async);
 
 static bool sync_fence_check(struct sync_fence *fence)
 {
-	/*
-	 * Make sure that reads to fence->status are ordered with the
-	 * wait queue event triggering
-	 */
-	smp_rmb();
-	return fence->status != 0;
-}
-
-int sync_fence_cancel_async(struct sync_fence *fence,
-			     struct sync_fence_waiter *waiter)
-{
-	struct list_head *pos;
-	struct list_head *n;
-	unsigned long flags;
-	int ret = -ENOENT;
-
-	spin_lock_irqsave(&fence->waiter_list_lock, flags);
-	/*
-	 * Make sure waiter is still in waiter_list because it is possible for
-	 * the waiter to be removed from the list while the callback is still
-	 * pending.
-	 */
-	list_for_each_safe(pos, n, &fence->waiter_list_head) {
-		struct sync_fence_waiter *list_waiter =
-			container_of(pos, struct sync_fence_waiter,
-				     waiter_list);
-		if (list_waiter == waiter) {
-			list_del(pos);
-			ret = 0;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&fence->waiter_list_lock, flags);
-	return ret;
+        /*
+         * Make sure that reads to fence->status are ordered with the
+         * wait queue event triggering
+         */
+        smp_rmb();
+        return fence->status != 0;
 }
 
 int sync_fence_wait(struct sync_fence *fence, long timeout)
