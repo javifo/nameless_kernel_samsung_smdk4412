@@ -645,13 +645,19 @@ static int sync_fence_release(struct inode *inode, struct file *file)
 	list_del(&fence->sync_fence_list);
 	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
 
+//<<<<<<< HEAD
 	/*
 	 * remove its pts from their parents so that sync_timeline_signal()
 	 * can't reference the fence.
 	 */
-	sync_fence_detach_pts(fence);
+/*	sync_fence_detach_pts(fence);
 
 	kref_put(&fence->kref, sync_fence_free);
+=======*/
+	sync_fence_free_pts(fence);
+
+	kfree(fence);
+//>>>>>>> 4128cda... sync: reorder sync_fence_release
 
 	return 0;
 }
