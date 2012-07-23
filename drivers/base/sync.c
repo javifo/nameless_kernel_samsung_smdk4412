@@ -120,6 +120,7 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
 {
 	struct sync_timeline *obj = pt->parent;
 	unsigned long flags;
+	bool needs_freeing = false;
 
 	spin_lock_irqsave(&obj->active_list_lock, flags);
 	if (!list_empty(&pt->active_list))
@@ -129,6 +130,8 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
 	spin_lock_irqsave(&obj->child_list_lock, flags);
 	if (!list_empty(&pt->child_list)) {
 		list_del_init(&pt->child_list);
+		needs_freeing = obj->destroyed &&
+			list_empty(&obj->child_list_head);
 	}
 	spin_unlock_irqrestore(&obj->child_list_lock, flags);
 }
@@ -404,12 +407,12 @@ static int sync_fence_merge_pts(struct sync_fence *dst, struct sync_fence *src)
 
 static void sync_fence_detach_pts(struct sync_fence *fence)
 {
-        struct list_head *pos, *n;
+	struct list_head *pos, *n;
 
-        list_for_each_safe(pos, n, &fence->pt_list_head) {
-                struct sync_pt *pt = container_of(pos, struct sync_pt, pt_list);
-                sync_timeline_remove_pt(pt);
-        }
+	list_for_each_safe(pos, n, &fence->pt_list_head) {
+		struct sync_pt *pt = container_of(pos, struct sync_pt, pt_list);
+		sync_timeline_remove_pt(pt);
+	}
 }
 
 static void sync_fence_free_pts(struct sync_fence *fence)
@@ -694,19 +697,13 @@ static int sync_fence_release(struct inode *inode, struct file *file)
 	list_del(&fence->sync_fence_list);
 	spin_unlock_irqrestore(&sync_fence_list_lock, flags);
 
-//<<<<<<< HEAD
 	/*
 	 * remove its pts from their parents so that sync_timeline_signal()
 	 * can't reference the fence.
 	 */
-/*	sync_fence_detach_pts(fence);
+	sync_fence_detach_pts(fence);
 
 	kref_put(&fence->kref, sync_fence_free);
-=======*/
-	sync_fence_free_pts(fence);
-
-	kfree(fence);
-//>>>>>>> 4128cda... sync: reorder sync_fence_release
 
 	return 0;
 }
