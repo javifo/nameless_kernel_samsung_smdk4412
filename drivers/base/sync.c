@@ -120,7 +120,6 @@ static void sync_timeline_remove_pt(struct sync_pt *pt)
 {
 	struct sync_timeline *obj = pt->parent;
 	unsigned long flags;
-	bool needs_freeing = false;
 
 	spin_lock_irqsave(&obj->active_list_lock, flags);
 	if (!list_empty(&pt->active_list))
