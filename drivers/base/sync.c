@@ -620,12 +620,12 @@ EXPORT_SYMBOL(sync_fence_cancel_async);
 
 static bool sync_fence_check(struct sync_fence *fence)
 {
-        /*
-         * Make sure that reads to fence->status are ordered with the
-         * wait queue event triggering
-         */
-        smp_rmb();
-        return fence->status != 0;
+	/*
+	 * Make sure that reads to fence->status are ordered with the
+	 * wait queue event triggering
+	 */
+	smp_rmb();
+	return fence->status != 0;
 }
 
 int sync_fence_wait(struct sync_fence *fence, long timeout)
