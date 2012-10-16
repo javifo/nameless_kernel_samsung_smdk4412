@@ -481,8 +481,8 @@ static int sync_fence_get_status(struct sync_fence *fence)
 struct sync_fence *sync_fence_merge(const char *name,
 				    struct sync_fence *a, struct sync_fence *b)
 {
-	struct list_head *pos;
 	struct sync_fence *fence;
+	struct list_head *pos;
 	int err;
 
 	fence = sync_fence_alloc(name);
@@ -497,15 +497,16 @@ struct sync_fence *sync_fence_merge(const char *name,
 	if (err < 0)
 		goto err;
 
+//<<<<<<< HEAD
 	/* Make sure there is at least one point in the fence */
-	if (list_empty(&fence->pt_list_head)) {
+/*	if (list_empty(&fence->pt_list_head)) {
 		struct sync_pt *orig_pt = list_first_entry(&a->pt_list_head,
 						struct sync_pt, pt_list);
 		struct sync_pt *new_pt = sync_pt_dup(orig_pt);
 
 		new_pt->fence = fence;
 		list_add(&new_pt->pt_list, &fence->pt_list_head);
-	}
+	}*/
 
 	list_for_each(pos, &fence->pt_list_head) {
 		struct sync_pt *pt =
