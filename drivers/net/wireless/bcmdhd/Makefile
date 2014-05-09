@@ -126,7 +126,11 @@ DHDCFLAGS += -DWL_IFACE_COMB_NUM_CHANNELS
 # m: module type driver
 # y: built-in type driver
 ##########################
+ifeq ($(CONFIG_MODULES),y)
 DRIVER_TYPE ?= m
+else
+DRIVER_TYPE ?= y
+endif
 
 #########################
 # Chip dependent feature
