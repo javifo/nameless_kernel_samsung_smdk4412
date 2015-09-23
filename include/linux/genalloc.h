@@ -14,7 +14,7 @@
 
 struct gen_pool;
 
-struct gen_pool *__must_check gen_pool_create(unsigned order, int nid);
+struct gen_pool *__must_check gen_pool_create(int min_alloc_order, int nid);
 
 extern phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long);
 extern int gen_pool_add_virt(struct gen_pool *, unsigned long, phys_addr_t,

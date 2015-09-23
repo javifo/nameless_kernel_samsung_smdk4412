@@ -20,7 +20,7 @@
 struct gen_pool {
 	rwlock_t lock;			/* protects chunks list */
 	struct list_head chunks;	/* list of chunks in this pool */
-	unsigned order;			/* minimum allocation order */
+	int min_alloc_order;		/* minimum allocation order */
 };
 
 /* General purpose special memory pool chunk descriptor. */
@@ -44,18 +44,18 @@ struct gen_pool_chunk {
  * Create a new special memory pool that can be used to manage special purpose
  * memory not managed by the regular kmalloc/kfree interface.
  */
-struct gen_pool *__must_check gen_pool_create(unsigned order, int nid)
+struct gen_pool *__must_check gen_pool_create(int min_alloc_order, int nid)
 {
 	struct gen_pool *pool;
 
-	if (WARN_ON(order >= BITS_PER_LONG))
+	if (WARN_ON(min_alloc_order >= BITS_PER_LONG))
 		return NULL;
 
 	pool = kmalloc_node(sizeof *pool, GFP_KERNEL, nid);
 	if (pool) {
 		rwlock_init(&pool->lock);
 		INIT_LIST_HEAD(&pool->chunks);
-		pool->order = order;
+		pool->min_alloc_order = min_alloc_order;
 	}
 	return pool;
 }
@@ -79,23 +79,24 @@ gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phys,
 		  size_t size, int nid)
 {
 	struct gen_pool_chunk *chunk;
-	size_t nbytes;
+	int nbits = size >> pool->min_alloc_order;
+	int nbytes = sizeof(struct gen_pool_chunk) +
+				BITS_TO_LONGS(nbits) * sizeof(long);
 
-	if (WARN_ON(!virt || virt + size < virt ||
+	/*if (WARN_ON(!virt || virt + size < virt ||
 		    (virt & ((1 << pool->order) - 1))))
 		return -EINVAL;
 
 	size = size >> pool->order;
 	if (WARN_ON(!size))
-		return -EINVAL;
+		return -EINVAL;*/
 
-	nbytes = sizeof *chunk + BITS_TO_LONGS(size) * sizeof *chunk->bits;
-	chunk = kzalloc_node(nbytes, GFP_KERNEL, nid);
-	if (!chunk)
+	chunk = kzalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+	if (unlikely(chunk == NULL))
 		return -ENOMEM;
 
 	spin_lock_init(&chunk->lock);
-	chunk->start = virt >> pool->order;
+	chunk->start = virt >> pool->min_alloc_order;
 	chunk->size  = size;
 	chunk->phys_addr = phys;
 
@@ -124,7 +125,7 @@ phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
 		unsigned long start_addr;
 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
 
-		start_addr = chunk->start << pool->order;
+		start_addr = chunk->start << pool->min_alloc_order;
 		if (addr >= start_addr && addr < start_addr + chunk->size)
 			return chunk->phys_addr + addr - start_addr;
 	}
@@ -181,10 +182,10 @@ gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
 	if (size == 0)
 		return 0;
 
-	if (alignment_order > pool->order)
-		align_mask = (1 << (alignment_order - pool->order)) - 1;
+	if (alignment_order > pool->min_alloc_order)
+		align_mask = (1 << (alignment_order - pool->min_alloc_order)) - 1;
 
-	size = (size + (1UL << pool->order) - 1) >> pool->order;
+	size = (size + (1UL << pool->min_alloc_order) - 1) >> pool->min_alloc_order;
 
 	read_lock(&pool->lock);
 	list_for_each_entry(chunk, &pool->chunks, next_chunk) {
@@ -202,7 +203,7 @@ gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
 
 		bitmap_set(chunk->bits, start, size);
 		spin_unlock_irqrestore(&chunk->lock, flags);
-		addr = (chunk->start + start) << pool->order;
+		addr = (chunk->start + start) << pool->min_alloc_order;
 		goto done;
 	}
 
@@ -229,8 +230,8 @@ void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
 	if (!size)
 		return;
 
-	addr = addr >> pool->order;
-	size = (size + (1UL << pool->order) - 1) >> pool->order;
+	addr = addr >> pool->min_alloc_order;
+	size = (size + (1UL << pool->min_alloc_order) - 1) >> pool->min_alloc_order;
 
 	BUG_ON(addr + size < addr);
 
